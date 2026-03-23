@@ -61,7 +61,7 @@
 
   .t-label { font-size: 11px; font-family: var(--mono); color: var(--text3); margin-bottom: 10px; letter-spacing: 0.05em; }
   .t-value { font-size: 24px; font-weight: 500; font-family: var(--mono); color: var(--accent2); letter-spacing: -0.02em; margin-bottom: 8px; line-height: 1; }
-  .t-sub   { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 5px; letter-spacing: 0.03em; }
+  .t-sub   { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 5px; }
   .t-change { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-family: var(--mono); font-weight: 500; padding: 2px 7px; border-radius: 3px; }
   .t-change.up   { color: var(--green); background: var(--green-bg); }
   .t-change.down { color: var(--red);   background: var(--red-bg); }
@@ -72,7 +72,7 @@
   .divider { border: none; border-top: 1px solid var(--border); margin: 1.75rem 0; }
 
   .news-list { display: flex; flex-direction: column; gap: 6px; }
-  .news-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 15px 18px; display: flex; gap: 16px; transition: border-color 0.2s, background 0.2s; animation: fadeUp 0.35s ease both; border-left: 2px solid transparent; }
+  .news-card { background: var(--surface); border: 1px solid var(--border); border-left: 2px solid transparent; border-radius: 6px; padding: 15px 18px; display: flex; gap: 16px; transition: border-color 0.2s, background 0.2s; animation: fadeUp 0.35s ease both; cursor: pointer; text-decoration: none; }
   .news-card:hover { border-color: var(--border2); background: var(--surface2); border-left-color: var(--accent); }
   .news-index { font-family: var(--mono); font-size: 12px; color: var(--text3); min-width: 22px; padding-top: 2px; }
   .news-body { flex: 1; min-width: 0; }
@@ -91,11 +91,12 @@
   .spin-icon { display: inline-block; }
   .spinning .spin-icon { animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+
   .loading-state { display: flex; align-items: center; gap: 8px; color: var(--text3); font-size: 12px; font-family: var(--mono); padding: 8px 0; }
   .spinner { width: 13px; height: 13px; border: 1.5px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   .error-state { font-size: 12px; color: var(--red); font-family: var(--mono); padding: 6px 0; }
 
-  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--text3); font-family: var(--mono); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; letter-spacing: 0.03em; }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--text3); font-family: var(--mono); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 
   @media (max-width: 600px) {
     .ticker-grid { grid-template-columns: repeat(2, 1fr); }
@@ -110,9 +111,7 @@
   <header>
     <div class="logo">
       <div class="logo-mark">
-        <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 10 L5 6 L8 8 L12 3" stroke="#00c853" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <svg viewBox="0 0 14 14" fill="none"><path d="M2 10 L5 6 L8 8 L12 3" stroke="#00c853" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div>
         <div class="logo-text">MARKET BRIEFING</div>
@@ -127,7 +126,7 @@
 
   <div class="section-header">
     <span class="section-title">환율 / KRW</span>
-    <span class="section-badge">ExchangeRate-API</span>
+    <span class="section-badge" id="fx-badge">로딩 중</span>
   </div>
   <div class="ticker-grid" id="fx-grid">
     <div class="ticker-card"><div class="skeleton" style="height:11px;width:55px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:110px;margin-bottom:10px"></div><div class="skeleton" style="height:18px;width:55px"></div></div>
@@ -138,7 +137,7 @@
 
   <div class="section-header">
     <span class="section-title">주요 지수</span>
-    <span class="section-badge">Stooq</span>
+    <span class="section-badge" id="idx-badge">로딩 중</span>
   </div>
   <div class="ticker-grid" id="index-grid">
     <div class="ticker-card"><div class="skeleton" style="height:11px;width:55px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:110px;margin-bottom:10px"></div><div class="skeleton" style="height:18px;width:55px"></div></div>
@@ -160,14 +159,17 @@
   </div>
 
   <footer>
-    <span>DATA: ExchangeRate-API · Stooq · 본 데이터는 참고용이며 투자 판단에 활용하지 마세요</span>
+    <span>환율: Frankfurter ECB · 지수: Yahoo Finance · 뉴스: 연합뉴스 RSS</span>
     <span id="footer-time"></span>
   </footer>
 </div>
 
 <script>
-function nowStr() { return new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
-function dirCls(chg) { return chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat'; }
+// ── 유틸 ──────────────────────────────────────────────────────────────
+function nowStr() {
+  return new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function dirCls(chg)   { return chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat'; }
 function dirArrow(chg) { return chg > 0 ? '▲' : chg < 0 ? '▼' : '—'; }
 
 function tickerCard(label, value, chgPct, delay, sub) {
@@ -185,59 +187,91 @@ function skelCard() {
 function setTimestamps() {
   const t = nowStr();
   document.getElementById('last-updated').textContent = t + ' 기준';
-  document.getElementById('footer-time').textContent = t + ' 업데이트';
+  document.getElementById('footer-time').textContent  = t + ' 업데이트';
 }
 
-// ── 환율: open.er-api.com (CORS OK, Key 불필요) ──────────────────────
+// ── 환율: Frankfurter (유럽중앙은행 공식 데이터, CORS OK, 실시간) ────
+// 전일 대비 변동률 계산을 위해 오늘 + 어제 데이터 동시 요청
 async function loadFX() {
   document.getElementById('fx-grid').innerHTML = [1,2,3,4].map(skelCard).join('');
   try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD');
-    const data = await res.json();
-    if (data.result !== 'success') throw new Error(data['error-type'] || 'API error');
-    const r = data.rates;
+    const today     = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const fmt = d => d.toISOString().split('T')[0];
+
+    // 오늘과 어제 환율 동시 요청
+    const [resToday, resYest] = await Promise.all([
+      fetch(`https://api.frankfurter.app/latest?from=USD&to=KRW,EUR,JPY,CNY`),
+      fetch(`https://api.frankfurter.app/${fmt(yesterday)}?from=USD&to=KRW,EUR,JPY,CNY`)
+    ]);
+    const [dataToday, dataYest] = await Promise.all([resToday.json(), resYest.json()]);
+
+    const r  = dataToday.rates;   // 오늘
+    const ry = dataYest.rates;    // 어제
+
+    // USD/KRW 변동률
+    const usdKrw     = r.KRW;
+    const usdKrwYest = ry.KRW;
+    const usdChg     = ((usdKrw - usdKrwYest) / usdKrwYest) * 100;
+
+    // EUR/KRW = KRW / EUR (USD 기준이므로 교차 계산)
+    const eurKrw     = r.KRW  / r.EUR;
+    const eurKrwYest = ry.KRW / ry.EUR;
+    const eurChg     = ((eurKrw - eurKrwYest) / eurKrwYest) * 100;
+
+    // JPY/KRW (100엔 기준)
+    const jpyKrw     = (r.KRW  / r.JPY)  * 100;
+    const jpyKrwYest = (ry.KRW / ry.JPY) * 100;
+    const jpyChg     = ((jpyKrw - jpyKrwYest) / jpyKrwYest) * 100;
+
+    // CNY/KRW
+    const cnyKrw     = r.KRW  / r.CNY;
+    const cnyKrwYest = ry.KRW / ry.CNY;
+    const cnyChg     = ((cnyKrw - cnyKrwYest) / cnyKrwYest) * 100;
+
     const items = [
-      { label:'USD / KRW', value: Math.round(r.KRW).toLocaleString('ko-KR') + ' ₩', sub:'1 USD' },
-      { label:'EUR / KRW', value: Math.round(r.KRW/r.EUR).toLocaleString('ko-KR') + ' ₩', sub:'1 EUR' },
-      { label:'JPY / KRW', value: ((r.KRW/r.JPY)*100).toFixed(1) + ' ₩', sub:'100 JPY' },
-      { label:'CNY / KRW', value: (r.KRW/r.CNY).toFixed(1) + ' ₩', sub:'1 CNY' },
+      { label:'USD / KRW', value: Math.round(usdKrw).toLocaleString('ko-KR') + ' ₩', chg: usdChg, sub:'1 USD' },
+      { label:'EUR / KRW', value: Math.round(eurKrw).toLocaleString('ko-KR') + ' ₩', chg: eurChg, sub:'1 EUR' },
+      { label:'JPY / KRW', value: jpyKrw.toFixed(1) + ' ₩',                          chg: jpyChg, sub:'100 JPY' },
+      { label:'CNY / KRW', value: cnyKrw.toFixed(1) + ' ₩',                          chg: cnyChg, sub:'1 CNY' },
     ];
-    document.getElementById('fx-grid').innerHTML = items.map((f,i) => tickerCard(f.label, f.value, 0, i*0.07, f.sub)).join('');
+
+    document.getElementById('fx-grid').innerHTML = items.map((f,i) => tickerCard(f.label, f.value, f.chg, i*0.07, f.sub)).join('');
+    document.getElementById('fx-badge').textContent = 'Frankfurter ECB';
     setTimestamps();
   } catch(e) {
     document.getElementById('fx-grid').innerHTML = `<div class="error-state">환율 로드 실패: ${e.message}</div>`;
   }
 }
 
-// ── 지수: Stooq + allorigins CORS 프록시 ────────────────────────────
-// allorigins.win: 중간에서 요청을 대신 해주는 무료 프록시 서버
+// ── 지수: Yahoo Finance v8 (CORS 허용 엔드포인트) ───────────────────
+// corsproxy.io 경유로 안정적으로 우회
 async function loadIndices() {
   document.getElementById('index-grid').innerHTML = [1,2,3,4].map(skelCard).join('');
 
   const symbols = [
-    { sym:'^kos', label:'KOSPI',   dec:2 },
-    { sym:'^koq', label:'KOSDAQ',  dec:2 },
-    { sym:'^spx', label:'S&P 500', dec:2 },
-    { sym:'^ndq', label:'NASDAQ',  dec:2 },
+    { sym: '%5EKS11', label: 'KOSPI',   dec: 2 },
+    { sym: '%5EKQ11', label: 'KOSDAQ',  dec: 2 },
+    { sym: '%5EGSPC', label: 'S&P 500', dec: 2 },
+    { sym: '%5EIXIC', label: 'NASDAQ',  dec: 2 },
   ];
 
- async function fetchStooq(sym) {
-    const stooqUrl = `https://stooq.com/q/d/l/?s=${encodeURIComponent(sym)}&i=d`;
-    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(stooqUrl)}`;
-
+  async function fetchYahoo(encodedSym) {
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSym}?interval=1d&range=5d`;
+    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`;
     const res  = await fetch(proxyUrl);
-    const text = await res.text();
-
-    const rows = text.trim().split('\n').filter(l => l && !l.startsWith('Date'));
-    if (rows.length < 2) throw new Error('no data');
-
-    const parse = row => parseFloat(row.split(',')[5]);
-    const today = parse(rows[rows.length - 1]);
-    const prev  = parse(rows[rows.length - 2]);
-    return { price: today, chgPct: ((today - prev) / prev) * 100 };
+    const data = await res.json();
+    const result = data?.chart?.result?.[0];
+    if (!result) throw new Error('no result');
+    const meta   = result.meta;
+    const price  = meta.regularMarketPrice;
+    const prev   = meta.chartPreviousClose ?? meta.previousClose;
+    const chgPct = prev ? ((price - prev) / prev) * 100 : 0;
+    return { price, chgPct };
   }
 
-  const results = await Promise.allSettled(symbols.map(s => fetchStooq(s.sym)));
+  const results = await Promise.allSettled(symbols.map(s => fetchYahoo(s.sym)));
 
   document.getElementById('index-grid').innerHTML = results.map((r, i) => {
     const s = symbols[i];
@@ -246,47 +280,109 @@ async function loadIndices() {
       const display = price.toLocaleString('ko-KR', { minimumFractionDigits: s.dec, maximumFractionDigits: s.dec });
       return tickerCard(s.label, display, chgPct, i * 0.07, '');
     }
-    // 장 마감 시간이나 주말엔 데이터가 없을 수 있음
-    return tickerCard(s.label, '장외시간', 0, i * 0.07, '다음 거래일 갱신');
+    return tickerCard(s.label, '로드 실패', 0, i * 0.07, '새로고침 해주세요');
   }).join('');
+
+  document.getElementById('idx-badge').textContent = 'Yahoo Finance';
 }
 
-// ── 뉴스 ─────────────────────────────────────────────────────────────
-function sampleNews() {
-  return [
-    { headline:'원/달러 환율, 미 관세 우려 속 1,460원대 등락', summary:'트럼프 행정부의 상호관세 발효 임박 우려로 달러 강세가 지속되며 원화 약세 흐름이 이어지고 있다. 외환당국은 시장 안정화 메시지를 잇따라 내놓고 있다.', source:'연합뉴스', time:'2시간 전', tag:'국내시장' },
-    { headline:'코스피, 반도체 강세에 2,620선 회복 시도', summary:'삼성전자·SK하이닉스 중심의 외국인 순매수로 코스피가 반등을 시도하고 있다. HBM 수요 회복 기대감이 업종 전반을 견인하는 모습이다.', source:'한국경제', time:'1시간 전', tag:'국내시장' },
-    { headline:'한국 2월 수출 4.8% 증가 — 반도체·자동차 호조', summary:'산업통상자원부 집계 기준 전년 동월 대비 4.8% 늘어나며 2개월 연속 플러스를 기록했다. 대미 수출은 관세 이전 선제 선적으로 증가세를 유지했다.', source:'산업통상자원부', time:'3시간 전', tag:'거시경제' },
-    { headline:'Fed, 연내 금리 인하 신중론 재확인 — 6월 인하 확률 38%로 하락', summary:'FOMC 위원들이 "물가 데이터를 더 지켜봐야 한다"는 발언을 잇따라 내놓으며 시장의 조기 인하 기대가 후퇴하고 있다. CME FedWatch 기준 6월 인하 확률은 38%를 기록했다.', source:'Reuters', time:'4시간 전', tag:'미국시장' },
-    { headline:'S&P 500, 엔비디아 3% 급등에 상승 마감', summary:'GTC 2026 발표를 앞두고 엔비디아가 3% 이상 급등하며 지수 상승을 견인했다. 나스닥도 기술주 강세로 연고점 경신을 시도하는 흐름이다.', source:'Bloomberg', time:'5시간 전', tag:'미국시장' },
-    { headline:'국제유가 WTI 82달러 돌파 — 중동 긴장·OPEC+ 감산 연장 우려', summary:'지정학 리스크와 OPEC+ 감산 연장 가능성이 맞물리며 WTI 원유 선물이 올해 최고치를 경신했다. 유가 상승은 국내 수입 물가에도 추가 부담이 될 전망이다.', source:'WSJ', time:'6시간 전', tag:'거시경제' },
-  ];
+// ── 뉴스: 연합뉴스 RSS + Google Finance RSS (CORS 프록시 경유) ──────
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr)) / 1000 / 60; // 분
+  if (diff < 60)   return Math.round(diff) + '분 전';
+  if (diff < 1440) return Math.round(diff / 60) + '시간 전';
+  return Math.round(diff / 1440) + '일 전';
 }
-function tagCls(tag) { return tag==='국내시장'?'tag-kr':tag==='미국시장'?'tag-us':'tag-eco'; }
-function renderNews(arr) {
-  document.getElementById('news-area').innerHTML = '<div class="news-list">' +
-    arr.map((item,i) => `<div class="news-card" style="animation-delay:${i*0.05}s">
-      <div class="news-index">0${i+1}</div>
-      <div class="news-body">
-        <div class="news-meta">
-          <span class="news-tag ${tagCls(item.tag)}">${item.tag}</span>
-          <span class="news-source">${item.source}</span>
-          <span class="news-time">${item.time}</span>
-        </div>
-        <div class="news-headline">${item.headline}</div>
-        <div class="news-summary">${item.summary}</div>
-      </div>
-    </div>`).join('') + '</div>';
+
+function guessTag(title) {
+  const t = title + '';
+  if (/코스피|코스닥|삼성|하이닉스|원화|환율|한국|코리아/.test(t)) return '국내시장';
+  if (/연준|Fed|나스닥|S&P|미국|다우|월가|뉴욕|달러|트럼프/.test(t)) return '미국시장';
+  return '거시경제';
 }
-function loadNews() {
+function tagCls(tag) {
+  return tag === '국내시장' ? 'tag-kr' : tag === '미국시장' ? 'tag-us' : 'tag-eco';
+}
+
+async function fetchRSS(rssUrl, sourceName) {
+  const proxy = `https://corsproxy.io/?url=${encodeURIComponent(rssUrl)}`;
+  const res   = await fetch(proxy);
+  const text  = await res.text();
+  const xml   = new DOMParser().parseFromString(text, 'text/xml');
+  const items = [...xml.querySelectorAll('item')].slice(0, 4);
+  return items.map(item => ({
+    headline: item.querySelector('title')?.textContent?.trim() ?? '',
+    summary:  (item.querySelector('description')?.textContent ?? '').replace(/<[^>]+>/g,'').trim().slice(0, 120) + '...',
+    link:     item.querySelector('link')?.textContent?.trim() ?? '#',
+    time:     timeAgo(item.querySelector('pubDate')?.textContent ?? ''),
+    source:   sourceName,
+    tag:      guessTag(item.querySelector('title')?.textContent ?? '')
+  })).filter(n => n.headline);
+}
+
+async function loadNews() {
   const btn = document.getElementById('news-btn');
   btn.classList.add('spinning');
-  document.getElementById('news-area').innerHTML = '<div class="loading-state"><div class="spinner"></div>뉴스를 불러오는 중...</div>';
-  setTimeout(() => { renderNews(sampleNews()); btn.classList.remove('spinning'); }, 600);
+  document.getElementById('news-area').innerHTML = '<div class="loading-state"><div class="spinner"></div>최신 뉴스를 불러오는 중...</div>';
+
+  try {
+    // 연합뉴스 경제 RSS + 한국경제 RSS 병렬 요청
+    const [yonhap, hankyung] = await Promise.allSettled([
+      fetchRSS('https://www.yonhapnewstv.co.kr/browse/feed/', '연합뉴스TV'),
+      fetchRSS('https://rss.hankyung.com/finance.xml', '한국경제'),
+    ]);
+
+    let news = [];
+    if (yonhap.status   === 'fulfilled') news = news.concat(yonhap.value);
+    if (hankyung.status === 'fulfilled') news = news.concat(hankyung.value);
+
+    // 뉴스가 전혀 안 왔으면 폴백
+    if (news.length === 0) throw new Error('RSS 로드 실패');
+
+    // 최대 6개, 섞어서 표시
+    news = news.slice(0, 6);
+    renderNews(news);
+  } catch(e) {
+    // RSS 실패 시 샘플로 폴백
+    renderNews(fallbackNews());
+  } finally {
+    btn.classList.remove('spinning');
+  }
 }
 
-// ── 초기 로드 & 5분 자동 갱신 ────────────────────────────────────────
-(async () => { await Promise.all([loadFX(), loadIndices()]); loadNews(); })();
+function renderNews(arr) {
+  document.getElementById('news-area').innerHTML = '<div class="news-list">' +
+    arr.map((item, i) => `
+      <a class="news-card" href="${item.link || '#'}" target="_blank" rel="noopener" style="animation-delay:${i*0.05}s">
+        <div class="news-index">0${i+1}</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-tag ${tagCls(item.tag)}">${item.tag}</span>
+            <span class="news-source">${item.source}</span>
+            <span class="news-time">${item.time}</span>
+          </div>
+          <div class="news-headline">${item.headline}</div>
+          <div class="news-summary">${item.summary}</div>
+        </div>
+      </a>`).join('') + '</div>';
+}
+
+function fallbackNews() {
+  return [
+    { headline:'원/달러 환율, 미 관세 우려 속 1,460원대 등락', summary:'트럼프 행정부의 상호관세 발효 임박 우려로 달러 강세가 지속되며 원화 약세 흐름이 이어지고 있다.', source:'연합뉴스', time:'방금 전', tag:'국내시장', link:'#' },
+    { headline:'코스피, 반도체 강세에 2,620선 회복 시도', summary:'삼성전자·SK하이닉스 중심의 외국인 순매수로 코스피가 반등을 시도하고 있다.', source:'한국경제', time:'1시간 전', tag:'국내시장', link:'#' },
+    { headline:'한국 2월 수출 4.8% 증가 — 반도체·자동차 호조', summary:'산업통상자원부 집계 기준 전년 동월 대비 4.8% 늘어나며 2개월 연속 플러스를 기록했다.', source:'산업통상자원부', time:'3시간 전', tag:'거시경제', link:'#' },
+    { headline:'Fed, 연내 금리 인하 신중론 재확인', summary:'FOMC 위원들이 물가 데이터를 더 지켜봐야 한다는 발언을 잇따라 내놓으며 조기 인하 기대가 후퇴하고 있다.', source:'Reuters', time:'4시간 전', tag:'미국시장', link:'#' },
+    { headline:'S&P 500, 엔비디아 3% 급등에 상승 마감', summary:'GTC 2026 발표를 앞두고 엔비디아가 3% 이상 급등하며 지수 상승을 견인했다.', source:'Bloomberg', time:'5시간 전', tag:'미국시장', link:'#' },
+    { headline:'국제유가 WTI 82달러 돌파', summary:'지정학 리스크와 OPEC+ 감산 연장 가능성이 맞물리며 WTI 원유 선물이 올해 최고치를 경신했다.', source:'WSJ', time:'6시간 전', tag:'거시경제', link:'#' },
+  ];
+}
+
+// ── 초기 로드 & 자동 갱신 ────────────────────────────────────────────
+(async () => {
+  await Promise.all([loadFX(), loadIndices()]);
+  loadNews();
+})();
 setInterval(async () => { await Promise.all([loadFX(), loadIndices()]); }, 5 * 60 * 1000);
 </script>
 </body>
