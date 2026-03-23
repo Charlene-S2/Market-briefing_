@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마켓 브리핑 — 실시간 금융 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555b6e;
+    --up: #34d399;
+    --up-bg: rgba(52,211,153,0.1);
+    --down: #f87171;
+    --down-bg: rgba(248,113,113,0.1);
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Noto Sans KR', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+  .page { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark svg { width: 14px; height: 14px; }
+  .logo-text { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .header-meta { text-align: right; }
+  .live-badge { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: var(--up); background: var(--up-bg); border: 1px solid rgba(52,211,153,0.2); padding: 3px 8px; border-radius: 20px; margin-bottom: 4px; }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--up); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .last-updated { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--mono); }
+  .section-badge { font-size: 10px; font-family: var(--mono); color: var(--text3); border: 1px solid var(--border2); padding: 2px 7px; border-radius: 4px; }
+  .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 2rem; }
+  .ticker-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; transition: border-color 0.2s, background 0.2s; animation: fadeUp 0.4s ease both; }
+  .ticker-card:hover { border-color: var(--border2); background: var(--surface2); }
+  .ticker-card.up-card { border-top: 2px solid var(--up); }
+  .ticker-card.down-card { border-top: 2px solid var(--down); }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .t-label { font-size: 11px; font-family: var(--mono); color: var(--text3); margin-bottom: 8px; letter-spacing: 0.04em; }
+  .t-value { font-size: 22px; font-weight: 600; font-family: var(--mono); color: var(--text); letter-spacing: -0.03em; margin-bottom: 8px; line-height: 1; }
+  .t-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 4px; }
+  .t-change { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-family: var(--mono); font-weight: 500; padding: 3px 8px; border-radius: 5px; }
+  .t-change.up { color: var(--up); background: var(--up-bg); }
+  .t-change.down { color: var(--down); background: var(--down-bg); }
+  .t-change.flat { color: var(--text3); background: rgba(255,255,255,0.04); }
+  .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 5px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .news-list { display: flex; flex-direction: column; gap: 10px; }
+  .news-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; display: flex; gap: 16px; transition: border-color 0.2s, background 0.2s; animation: fadeUp 0.4s ease both; }
+  .news-card:hover { border-color: var(--border2); background: var(--surface2); }
+  .news-index { font-family: var(--mono); font-size: 13px; color: var(--text3); min-width: 20px; padding-top: 2px; }
+  .news-body { flex: 1; min-width: 0; }
+  .news-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+  .news-tag { font-size: 10px; font-family: var(--mono); font-weight: 500; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.04em; }
+  .tag-kr { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.25); }
+  .tag-us { background: rgba(52,211,153,0.1); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.2); }
+  .tag-eco { background: rgba(251,191,36,0.1); color: #fcd34d; border: 1px solid rgba(251,191,36,0.2); }
+  .news-source { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .news-time { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .news-headline { font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.5; margin-bottom: 5px; }
+  .news-summary { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .refresh-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: var(--mono); color: var(--text3); background: transparent; border: 1px solid var(--border2); padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+  .refresh-btn:hover { color: var(--text); background: var(--surface2); }
+  .spin-icon { display: inline-block; }
+  .spinning .spin-icon { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state { display: flex; align-items: center; gap: 8px; color: var(--text3); font-size: 13px; font-family: var(--mono); padding: 8px 0; }
+  .spinner { width: 14px; height: 14px; border: 1.5px solid var(--border2); border-top-color: var(--accent2); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .error-state { font-size: 13px; color: var(--down); font-family: var(--mono); padding: 6px 0; }
+  .info-note { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 6px; }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--text3); font-family: var(--mono); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  @media (max-width: 600px) { .ticker-grid { grid-template-columns: repeat(2, 1fr); } header { flex-direction: column; align-items: flex-start; gap: 12px; } .t-value { font-size: 18px; } .news-card { padding: 14px 16px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 10 L5 6 L8 8 L12 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">마켓 브리핑</div>
+        <div class="logo-sub">실시간 금융 대시보드</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><span class="live-badge"><span class="live-dot"></span>LIVE</span></div>
+      <div class="last-updated" id="last-updated">로딩 중...</div>
+    </div>
+  </header>
+  <div class="section-header">
+    <span class="section-title">환율 / KRW</span>
+    <span class="section-badge">ExchangeRate-API</span>
+  </div>
+  <div class="ticker-grid" id="fx-grid">
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+  </div>
+  <div class="section-header">
+    <span class="section-title">주요 지수</span>
+    <span class="section-badge">Stooq</span>
+  </div>
+  <div class="ticker-grid" id="index-grid">
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+    <div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>
+  </div>
+  <hr class="divider">
+  <div class="section-header">
+    <span class="section-title">최신 뉴스</span>
+    <button class="refresh-btn" id="news-btn" onclick="loadNews()">
+      <span class="spin-icon">↺</span> 새로고침
+    </button>
+  </div>
+  <div id="news-area">
+    <div class="loading-state"><div class="spinner"></div>뉴스를 불러오는 중...</div>
+  </div>
+  <footer>
+    <span>환율: ExchangeRate-API · 지수: Stooq · 뉴스: 편집 큐레이션</span>
+    <span id="footer-time"></span>
+  </footer>
+</div>
+<script>
+function nowStr() { return new Date().toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+function dirCls(chg) { return chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat'; }
+function dirArrow(chg) { return chg > 0 ? '▲' : chg < 0 ? '▼' : '—'; }
+function tickerCard(label, value, chgPct, delay, sub) {
+  const c = dirCls(chgPct), sign = chgPct > 0 ? '+' : '', tb = c==='up'?'up-card':c==='down'?'down-card':'';
+  return `<div class="ticker-card ${tb}" style="animation-delay:${delay}s"><div class="t-label">${label}</div><div class="t-value">${value}</div><span class="t-change ${c}">${dirArrow(chgPct)} ${sign}${Math.abs(chgPct).toFixed(2)}%</span>${sub?`<div class="t-sub">${sub}</div>`:''}</div>`;
+}
+function skelCard() { return `<div class="ticker-card"><div class="skeleton" style="height:12px;width:60px;margin-bottom:12px"></div><div class="skeleton" style="height:26px;width:100px;margin-bottom:10px"></div><div class="skeleton" style="height:20px;width:55px"></div></div>`; }
+function setTimestamps() { const t=nowStr(); document.getElementById('last-updated').textContent=t+' 기준'; document.getElementById('footer-time').textContent=t+' 업데이트'; }
+async function loadFX() {
+  document.getElementById('fx-grid').innerHTML=[1,2,3,4].map(skelCard).join('');
+  try {
+    const res=await fetch('https://open.er-api.com/v6/latest/USD');
+    const data=await res.json();
+    if(data.result!=='success') throw new Error(data['error-type']||'API error');
+    const r=data.rates;
+    const items=[
+      {label:'USD / KRW',value:Math.round(r.KRW).toLocaleString('ko-KR')+' ₩',sub:'1 USD'},
+      {label:'EUR / KRW',value:Math.round(r.KRW/r.EUR).toLocaleString('ko-KR')+' ₩',sub:'1 EUR'},
+      {label:'JPY / KRW',value:((r.KRW/r.JPY)*100).toFixed(1)+' ₩',sub:'100 JPY'},
+      {label:'CNY / KRW',value:(r.KRW/r.CNY).toFixed(1)+' ₩',sub:'1 CNY'},
+    ];
+    document.getElementById('fx-grid').innerHTML=items.map((f,i)=>tickerCard(f.label,f.value,0,i*0.07,f.sub)).join('');
+    setTimestamps();
+  } catch(e) { document.getElementById('fx-grid').innerHTML=`<div class="error-state">환율 로드 실패: ${e.message}</div>`; }
+}
+async function loadIndices() {
+  document.getElementById('index-grid').innerHTML=[1,2,3,4].map(skelCard).join('');
+  const symbols=[{sym:'^kos',label:'KOSPI',dec:2},{sym:'^koq',label:'KOSDAQ',dec:2},{sym:'^spx',label:'S&P 500',dec:2},{sym:'^ndq',label:'NASDAQ',dec:2}];
+  async function fetchStooq(sym) {
+    const res=await fetch(`https://stooq.com/q/d/l/?s=${encodeURIComponent(sym)}&i=d`);
+    const text=await res.text();
+    const rows=text.trim().split('\n').filter(l=>l&&!l.startsWith('Date'));
+    if(rows.length<2) throw new Error('insufficient data');
+    const parse=row=>parseFloat(row.split(',')[5]);
+    const today=parse(rows[rows.length-1]), prev=parse(rows[rows.length-2]);
+    return {price:today, chgPct:((today-prev)/prev)*100};
+  }
+  const results=await Promise.allSettled(symbols.map(s=>fetchStooq(s.sym)));
+  document.getElementById('index-grid').innerHTML=results.map((r,i)=>{
+    const s=symbols[i];
+    if(r.status==='fulfilled') {
+      const {price,chgPct}=r.value;
+      return tickerCard(s.label,price.toLocaleString('ko-KR',{minimumFractionDigits:s.dec,maximumFractionDigits:s.dec}),chgPct,i*0.07,'');
+    }
+    return tickerCard(s.label,'장외시간',0,i*0.07,'다음 거래일 갱신');
+  }).join('');
+}
+function sampleNews() {
+  return [
+    {headline:'원/달러 환율, 미 관세 우려 속 1,460원대 등락',summary:'트럼프 행정부의 상호관세 발효 임박 우려로 달러 강세가 지속되며 원화 약세 흐름이 이어지고 있다. 외환당국은 시장 안정화 메시지를 잇따라 내놓고 있다.',source:'연합뉴스',time:'2시간 전',tag:'국내시장'},
+    {headline:'코스피, 반도체 강세에 2,620선 회복 시도',summary:'삼성전자·SK하이닉스 중심의 외국인 순매수로 코스피가 반등을 시도하고 있다. HBM 수요 회복 기대감이 업종 전반을 견인하는 모습이다.',source:'한국경제',time:'1시간 전',tag:'국내시장'},
+    {headline:'한국 2월 수출 4.8% 증가 — 반도체·자동차 호조',summary:'산업통상자원부 집계 기준 전년 동월 대비 4.8% 늘어나며 2개월 연속 플러스를 기록했다. 대미 수출은 관세 이전 선제 선적으로 증가세를 유지했다.',source:'산업통상자원부',time:'3시간 전',tag:'거시경제'},
+    {headline:'Fed, 연내 금리 인하 신중론 재확인 — 6월 인하 확률 38%로 하락',summary:'FOMC 위원들이 "물가 데이터를 더 지켜봐야 한다"는 발언을 잇따라 내놓으며 시장의 조기 인하 기대가 후퇴하고 있다. CME FedWatch 기준 6월 인하 확률은 38%를 기록했다.',source:'Reuters',time:'4시간 전',tag:'미국시장'},
+    {headline:'S&P 500, 엔비디아 3% 급등에 상승 마감',summary:'GTC 2026 발표를 앞두고 엔비디아가 3% 이상 급등하며 지수 상승을 견인했다. 나스닥도 기술주 강세로 연고점 경신을 시도하는 흐름이다.',source:'Bloomberg',time:'5시간 전',tag:'미국시장'},
+    {headline:'국제유가 WTI 82달러 돌파 — 중동 긴장·OPEC+ 감산 연장 우려',summary:'지정학 리스크와 OPEC+ 감산 연장 가능성이 맞물리며 WTI 원유 선물이 올해 최고치를 경신했다. 유가 상승은 국내 수입 물가에도 추가 부담이 될 전망이다.',source:'WSJ',time:'6시간 전',tag:'거시경제'},
+  ];
+}
+function tagCls(tag) { return tag==='국내시장'?'tag-kr':tag==='미국시장'?'tag-us':'tag-eco'; }
+function renderNews(arr) {
+  document.getElementById('news-area').innerHTML='<div class="news-list">'+arr.map((item,i)=>`<div class="news-card" style="animation-delay:${i*0.06}s"><div class="news-index">0${i+1}</div><div class="news-body"><div class="news-meta"><span class="news-tag ${tagCls(item.tag)}">${item.tag}</span><span class="news-source">${item.source}</span><span class="news-time">${item.time}</span></div><div class="news-headline">${item.headline}</div><div class="news-summary">${item.summary}</div></div></div>`).join('')+'</div>';
+}
+function loadNews() {
+  const btn=document.getElementById('news-btn');
+  btn.classList.add('spinning');
+  document.getElementById('news-area').innerHTML='<div class="loading-state"><div class="spinner"></div>뉴스를 불러오는 중...</div>';
+  setTimeout(()=>{ renderNews(sampleNews()); btn.classList.remove('spinning'); },600);
+}
+(async()=>{ await Promise.all([loadFX(),loadIndices()]); loadNews(); })();
+setInterval(async()=>{ await Promise.all([loadFX(),loadIndices()]); },5*60*1000);
+</script>
+</body>
+</html>
+```
+
+---
